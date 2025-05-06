@@ -68,6 +68,24 @@ app.put("/api/startup/:uid/:id", async (req, res) => {
   }
 });
 
+app.delete("/api/startup/:uid/:id", async (req, res) => {
+  const { uid, id } = req.params;
+
+  try {
+    const ref = db.collection("startups").doc(id);
+    const doc = await ref.get();
+
+    if (!doc.exists || doc.data().uid !== uid) {
+      return res.status(404).json({ error: "Startup not found or unauthorized" });
+    }
+
+    await ref.delete();
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Error deleting startup" });
+  }
+});
+
 app.get("/api/investors", async (req, res) => {
   try {
     const snapshot = await db.collection("investors").get();
