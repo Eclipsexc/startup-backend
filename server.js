@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
-
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY);
 
 admin.initializeApp({
@@ -13,7 +12,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Отримати всі стартапи користувача
 app.get("/api/startup/:uid", async (req, res) => {
   try {
     const snapshot = await db.collection("startups")
@@ -31,7 +29,6 @@ app.get("/api/startup/:uid", async (req, res) => {
   }
 });
 
-// Створити новий стартап
 app.post("/api/startup/:uid", async (req, res) => {
   const data = req.body;
   const uid = req.params.uid;
@@ -48,31 +45,16 @@ app.post("/api/startup/:uid", async (req, res) => {
   }
 });
 
-// Отримати конкретний стартап за ID
-app.get("/api/startup/:uid/:id", async (req, res) => {
-  try {
-    const doc = await db.collection("startups").doc(req.params.id).get();
-    if (!doc.exists) return res.status(404).json({ error: "Startup not found" });
-
-    const data = doc.data();
-    if (data.uid !== req.params.uid) return res.status(403).json({ error: "Forbidden" });
-
-    res.json({ id: doc.id, ...data });
-  } catch {
-    res.status(500).json({ error: "Error getting startup by ID" });
-  }
-});
-
-// Оновити конкретний стартап за ID
 app.put("/api/startup/:uid/:id", async (req, res) => {
   const data = req.body;
+  const { uid, id } = req.params;
+
+  if (!data.name || data.name.length < 5) {
+    return res.status(400).json({ error: "Name too short" });
+  }
+
   try {
-    const doc = await db.collection("startups").doc(req.params.id).get();
-    if (!doc.exists) return res.status(404).json({ error: "Startup not found" });
-
-    if (doc.data().uid !== req.params.uid) return res.status(403).json({ error: "Forbidden" });
-
-    await db.collection("startups").doc(req.params.id).update(data);
+    await db.collection("startups").doc(id).update({ ...data, uid });
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: "Error updating startup" });
