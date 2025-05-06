@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
+
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY);
 
 admin.initializeApp({
@@ -98,6 +99,7 @@ app.get("/api/users", async (req, res) => {
 app.post("/api/users", async (req, res) => {
   const { uid, email, nickname, avatar } = req.body;
   if (!uid || !email) return res.status(400).json({ error: "Missing uid or email" });
+
   try {
     await db.collection("users").doc(uid).set({ email, nickname, avatar });
     res.json({ success: true });
