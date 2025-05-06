@@ -54,7 +54,14 @@ app.put("/api/startup/:uid/:id", async (req, res) => {
   }
 
   try {
-    await db.collection("startups").doc(id).update({ ...data, uid });
+    const ref = db.collection("startups").doc(id);
+    const doc = await ref.get();
+
+    if (!doc.exists || doc.data().uid !== uid) {
+      return res.status(404).json({ error: "Startup not found or unauthorized" });
+    }
+
+    await ref.update({ ...data, uid });
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: "Error updating startup" });
