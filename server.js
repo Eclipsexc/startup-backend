@@ -1,8 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
-
-// Отримуємо JSON-ключ з environment-змінної
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY);
 
 admin.initializeApp({
@@ -16,19 +14,31 @@ app.use(express.json());
 
 app.get("/api/startup/:uid", async (req, res) => {
   try {
-    const doc = await db.collection("startups").doc(req.params.uid).get();
-    if (!doc.exists) return res.status(404).json({ error: "Startup not found" });
-    res.json(doc.data());
+    const snapshot = await db.collection("startups")
+      .where("uid", "==", req.params.uid)
+      .get();
+
+    const startups = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.json(startups);
   } catch {
-    res.status(500).json({ error: "Error getting startup" });
+    res.status(500).json({ error: "Error getting startups" });
   }
 });
 
 app.post("/api/startup/:uid", async (req, res) => {
   const data = req.body;
-  if (!data.name || data.name.length < 5) return res.status(400).json({ error: "Name too short" });
+  const uid = req.params.uid;
+
+  if (!data.name || data.name.length < 5) {
+    return res.status(400).json({ error: "Name too short" });
+  }
+
   try {
-    await db.collection("startups").doc(req.params.uid).set(data);
+    await db.collection("startups").add({ ...data, uid });
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: "Error saving startup" });
